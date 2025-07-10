@@ -5,7 +5,7 @@ auto main() -> int
 {
 	std::println("Current working dir: {}", std::filesystem::current_path().generic_string());
 
-	auto app = project::application();
+	auto app = gcmt::application();
 
 	return app.run();
 }

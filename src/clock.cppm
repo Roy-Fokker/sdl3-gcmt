@@ -4,7 +4,7 @@ export module clock;
 
 import std;
 
-export namespace project
+export namespace gcmt
 {
 	class clock
 	{

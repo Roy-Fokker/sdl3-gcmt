@@ -16,7 +16,7 @@ namespace
 	constexpr auto WND_HEIGHT = 600u;
 }
 
-export namespace project
+export namespace gcmt
 {
 	class application
 	{
@@ -30,7 +30,7 @@ export namespace project
 		// Public API
 		application()
 		{
-			constexpr auto WND_TITLE = "SDL3 C++ 23 Project Template"sv;
+			constexpr auto WND_TITLE = "Geometric Clipmap Terrain"sv;
 
 			constexpr auto SHADER_FORMAT = SDL_GPUShaderFormat{
 #ifdef SPIRV
@@ -108,7 +108,7 @@ export namespace project
 	};
 }
 
-using namespace project;
+using namespace gcmt;
 using namespace sdl;
 using namespace sdl::type;
 
