@@ -6,6 +6,7 @@ import std;
 import sdl;
 import clock;
 import io;
+import camera;
 
 namespace st = sdl::type;
 using namespace std::literals;
@@ -75,6 +76,7 @@ export namespace gcmt
 			struct uniform_data
 			{
 				glm::mat4 projection;
+				glm::mat4 view;
 			} mvp;
 		};
 
@@ -85,8 +87,9 @@ export namespace gcmt
 		SDL_Event evt       = {};                                                     // SDL Event object
 		scene scn           = {};                                                     // Project's Render context;
 
-		clock clk = {};
-		bool quit = false;
+		camera cam = {};
+		clock clk  = {};
+		bool quit  = false;
 	};
 }
 
@@ -153,29 +156,31 @@ namespace
 			.vertex_buffer_descriptions = vbd,
 			.color_format               = SDL_GetGPUSwapchainTextureFormat(gpu, wnd),
 			.enable_depth_stencil       = true,
-			.raster                     = raster_type::none_fill,
-			.blend                      = blend_type::none,
-			.topology                   = topology_type::triangle_list,
+			.raster                     = raster_type::back_ccw_wire,
+			.blend                      = blend_type::opaque,
+			.topology                   = topology_type::triangle_strip,
 		};
 
 		return pl.build(gpu);
 	}
 
-	auto make_square() -> mesh
+	auto make_mesh() -> mesh
 	{
-		constexpr auto x = 0.5f;
-		constexpr auto y = 0.5f;
+		constexpr auto x = 1.5f;
+		constexpr auto y = 1.5f;
 
 		return {
 			.vertices = {
-			  { { -x, +y, 1.f }, { 0.f, 0.f, 1.f, 1.f } },
-			  { { +x, +y, 1.f }, { 1.f, 0.f, 0.f, 1.f } },
-			  { { +x, -y, 1.f }, { 0.f, 1.f, 0.f, 1.f } },
-			  { { -x, -y, 1.f }, { 0.f, 1.f, 1.f, 1.f } },
+			  { { -x, -y, 1.f }, { 0.f, 1.f, 1.f, 1.f } }, // Bottom Left
+			  { { +x, -y, 1.f }, { 0.f, 1.f, 0.f, 1.f } }, // Bottom Right
+			  { { -x, +y, 1.f }, { 0.f, 0.f, 1.f, 1.f } }, // Top Left
+			  { { +x, +y, 1.f }, { 1.f, 0.f, 0.f, 1.f } }, // Top Right
 			},
 			.indices = {
-			  0, 1, 2, // face 1
-			  2, 3, 0, // face 2
+			  0,
+			  1,
+			  2,
+			  3,
 			},
 		};
 	}
@@ -226,6 +231,13 @@ namespace
 
 		return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
 	}
+
+	void place_camera(camera &cam)
+	{
+		cam.lookat(glm::vec3{ 0.0f, 0.0f, -2.0f },
+		           glm::vec3{ 0.0f, 0.0f, 0.0f },
+		           glm::vec3{ 0.0f, 1.0f, 0.0f });
+	}
 }
 
 void application::handle_sdl_events()
@@ -248,12 +260,45 @@ void application::handle_sdl_events()
 
 void application::handle_sdl_input()
 {
+	auto dt               = static_cast<float>(clk.get_delta<clock::s>());
+	const auto move_speed = 2.f * dt;
+	const auto rot_speed  = glm::radians(10.0f) * dt;
+
 	auto handle_keyboard = [&]([[maybe_unused]] const SDL_KeyboardEvent &key_evt) {
-		quit = true;
+		auto cam_dir = glm::vec3{};
+
+		switch (key_evt.scancode)
+		{
+		case SDL_SCANCODE_ESCAPE:
+			quit = true;
+			break;
+		case SDL_SCANCODE_W:
+			cam_dir.z = 1.f;
+			break;
+		case SDL_SCANCODE_S:
+			cam_dir.z = -1.f;
+			break;
+		case SDL_SCANCODE_A:
+			cam_dir.x = -1.f;
+			break;
+		case SDL_SCANCODE_D:
+			cam_dir.x = 1.f;
+			break;
+		case SDL_SCANCODE_Q:
+			cam_dir.y = -1.f;
+			break;
+		case SDL_SCANCODE_E:
+			cam_dir.y = 1.f;
+			break;
+		}
+		cam.translate(cam_dir * move_speed);
 	};
 
 	auto handle_mouse_motion = [&]([[maybe_unused]] const SDL_MouseMotionEvent &mouse_evt) {
-
+		auto cam_rot = glm::vec3{};
+		cam_rot.y    = -mouse_evt.xrel;
+		cam_rot.x    = -mouse_evt.yrel;
+		cam.rotate(cam_rot * rot_speed);
 	};
 
 	auto handle_mouse_wheel = [&]([[maybe_unused]] const SDL_MouseWheelEvent &wheel_evt) {
@@ -276,10 +321,12 @@ void application::handle_sdl_input()
 
 void application::prepare_scene()
 {
+	place_camera(cam);
+
 	scn.clear_color    = { 0.2f, 0.2f, 0.4f, 1.0f };
 	scn.basic_pipeline = make_pipeline(gpu.get(), wnd.get());
 
-	auto sqr_msh     = make_square();
+	auto sqr_msh     = make_mesh();
 	scn.vertex_count = static_cast<uint32_t>(sqr_msh.vertices.size());
 	scn.index_count  = static_cast<uint32_t>(sqr_msh.indices.size());
 
@@ -288,10 +335,12 @@ void application::prepare_scene()
 	scn.depth_texture = make_depth_texture(gpu.get(), wnd.get());
 
 	scn.mvp.projection = make_perspective();
+	scn.mvp.view       = cam.get_view();
 }
 
 void application::update_state()
 {
+	scn.mvp.view = cam.get_view();
 }
 
 void application::draw()

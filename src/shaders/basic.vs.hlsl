@@ -15,6 +15,7 @@ struct Output
 struct Uniform_Data
 {
 	float4x4 proj;
+	float4x4 view;
 };
 ConstantBuffer<Uniform_Data> mvp : register(b0, space1);
 
@@ -23,7 +24,7 @@ Output main(Input input)
 	Output output;
 	output.Color = input.Color;
 	float4 pos = float4(input.Position, 1.0f);
-	output.Position = mul(mvp.proj, pos);
+	output.Position = mul(mvp.proj, mul(mvp.view, pos));
 	
 	return output;
 }

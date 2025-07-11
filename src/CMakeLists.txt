@@ -51,8 +51,9 @@ target_sources(${PRJ_APP_NAME}
 	PRIVATE FILE_SET app_modules TYPE CXX_MODULES FILES
 		sdl.cppm
 		application.cppm
-		clock.cppm
 		io.cppm
+		clock.cppm
+		camera.cppm
 )
 
 # libraries used by this application
