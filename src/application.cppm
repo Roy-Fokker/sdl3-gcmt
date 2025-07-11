@@ -10,41 +10,23 @@ import io;
 namespace st = sdl::type;
 using namespace std::literals;
 
-namespace
+export namespace gcmt
 {
 	constexpr auto WND_WIDTH  = 800u;
 	constexpr auto WND_HEIGHT = 600u;
-}
+	constexpr auto WND_TITLE  = "Geometric Clipmap Terrain";
 
-export namespace gcmt
-{
+	constexpr auto SHADER_FORMAT = SDL_GPUShaderFormat{
+#ifdef SPIRV
+		SDL_GPU_SHADERFORMAT_SPIRV
+#elifdef DXIL
+		SDL_GPU_SHADERFORMAT_DXIL
+#endif
+	};
+
 	class application
 	{
 	public:
-		// Rule of 5
-		application(const application &)                     = default; // defaulted copy c'tor
-		auto operator=(const application &) -> application & = default; // defaulted copy c'tor
-		application(application &&)                          = default; // defaulted move c'tor
-		auto operator=(application &&) -> application &      = default; // defaulted move c'tor
-
-		// Public API
-		application()
-		{
-			constexpr auto WND_TITLE = "Geometric Clipmap Terrain"sv;
-
-			constexpr auto SHADER_FORMAT = SDL_GPUShaderFormat{
-#ifdef SPIRV
-				SDL_GPU_SHADERFORMAT_SPIRV
-#elifdef DXIL
-				SDL_GPU_SHADERFORMAT_DXIL
-#endif
-			};
-
-			wnd = sdl::make_window(WND_WIDTH, WND_HEIGHT, WND_TITLE, {});
-			gpu = sdl::make_gpu(wnd.get(), SHADER_FORMAT);
-		}
-		~application() = default;
-
 		auto run() -> int
 		{
 			prepare_scene();
@@ -97,11 +79,11 @@ export namespace gcmt
 		};
 
 		// Private members
-		sdl::sdl_base sdl_o = {};      // SDL base object
-		st::window_ptr wnd  = nullptr; // SDL window object
-		st::gpu_ptr gpu     = nullptr; // SDL GPU object
-		SDL_Event evt       = {};      // SDL Event object
-		scene scn           = {};      // Project's Render context;
+		sdl::sdl_base sdl_o = {};                                                     // SDL base object
+		st::window_ptr wnd  = sdl::make_window(WND_WIDTH, WND_HEIGHT, WND_TITLE, {}); // SDL window object
+		st::gpu_ptr gpu     = sdl::make_gpu(wnd.get(), SHADER_FORMAT);                // SDL GPU object
+		SDL_Event evt       = {};                                                     // SDL Event object
+		scene scn           = {};                                                     // Project's Render context;
 
 		clock clk = {};
 		bool quit = false;
