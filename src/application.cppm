@@ -113,13 +113,13 @@ namespace
 
 	auto make_pipeline(SDL_GPUDevice *gpu, SDL_Window *wnd) -> gfx_pipeline_ptr
 	{
-		auto vs_shdr = shader_builder{
+		const auto vs_shdr = shader_builder{
 			.shader_binary        = io::read_file("shaders/basic.vs_6_4.cso"),
 			.stage                = shader_stage::vertex,
 			.uniform_buffer_count = 1,
 		};
 
-		auto ps_shdr = shader_builder{
+		const auto ps_shdr = shader_builder{
 			.shader_binary = io::read_file("shaders/basic.ps_6_4.cso"),
 			.stage         = shader_stage::fragment,
 		};
@@ -208,7 +208,7 @@ namespace
 		auto h = 0;
 		SDL_GetWindowSizeInPixels(wnd, &w, &h);
 
-		auto texture_info = SDL_GPUTextureCreateInfo{
+		const auto texture_info = SDL_GPUTextureCreateInfo{
 			.type                 = SDL_GPU_TEXTURETYPE_2D,
 			.format               = get_gpu_supported_depth_stencil_format(gpu),
 			.usage                = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
@@ -262,7 +262,7 @@ void application::handle_sdl_events()
 
 void application::handle_sdl_input()
 {
-	auto dt               = static_cast<float>(clk.get_delta<clock::s>());
+	const auto dt         = static_cast<float>(clk.get_delta<clock::s>());
 	const auto move_speed = 2.f * dt;
 	const auto rot_speed  = glm::radians(10.0f) * dt;
 
@@ -355,19 +355,19 @@ void application::draw()
 	assert(cmd_buf != nullptr and "Failed to acquire command buffer.");
 
 	// Push Uniform buffer
-	auto mvp_bytes = io::as_byte_span(scn.mvp);
+	const auto mvp_bytes = io::as_byte_span(scn.mvp);
 	SDL_PushGPUVertexUniformData(cmd_buf, 0, mvp_bytes.data(), static_cast<uint32_t>(mvp_bytes.size()));
 
-	auto sc_img = sdl::next_swapchain_image(wnd.get(), cmd_buf);
+	const auto sc_img = sdl::next_swapchain_image(wnd.get(), cmd_buf);
 
-	auto color_target = SDL_GPUColorTargetInfo{
+	const auto color_target = SDL_GPUColorTargetInfo{
 		.texture     = sc_img,
 		.clear_color = scn.clear_color,
 		.load_op     = SDL_GPU_LOADOP_CLEAR,
 		.store_op    = SDL_GPU_STOREOP_STORE,
 	};
 
-	auto depth_target = SDL_GPUDepthStencilTargetInfo{
+	const auto depth_target = SDL_GPUDepthStencilTargetInfo{
 		.texture          = scn.depth_texture.get(),
 		.clear_depth      = 1.0f,
 		.load_op          = SDL_GPU_LOADOP_CLEAR,
@@ -378,11 +378,11 @@ void application::draw()
 		.clear_stencil    = 0,
 	};
 
-	auto render_pass = SDL_BeginGPURenderPass(cmd_buf, &color_target, 1, &depth_target);
-	{
+	{ // Render Pass
+		auto render_pass = SDL_BeginGPURenderPass(cmd_buf, &color_target, 1, &depth_target);
 		SDL_BindGPUGraphicsPipeline(render_pass, scn.basic_pipeline.get());
 
-		auto vertex_bindings = std::array{
+		const auto vertex_bindings = std::array{
 			SDL_GPUBufferBinding{
 			  .buffer = scn.vertex_buffer.get(),
 			  .offset = 0,
@@ -390,14 +390,14 @@ void application::draw()
 		};
 		SDL_BindGPUVertexBuffers(render_pass, 0, vertex_bindings.data(), static_cast<uint32_t>(vertex_bindings.size()));
 
-		auto index_binding = SDL_GPUBufferBinding{
+		const auto index_binding = SDL_GPUBufferBinding{
 			.buffer = scn.index_buffer.get(),
 			.offset = 0,
 		};
 		SDL_BindGPUIndexBuffer(render_pass, &index_binding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
 		SDL_DrawGPUIndexedPrimitives(render_pass, scn.index_count, 1, 0, 0, 0);
+		SDL_EndGPURenderPass(render_pass);
 	}
-	SDL_EndGPURenderPass(render_pass);
 	SDL_SubmitGPUCommandBuffer(cmd_buf);
 }
