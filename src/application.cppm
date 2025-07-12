@@ -254,6 +254,8 @@ void application::handle_sdl_events()
 		case SDL_EVENT_MOUSE_WHEEL:
 			handle_sdl_input();
 			break;
+		default:
+			break;
 		}
 	}
 }
@@ -290,6 +292,8 @@ void application::handle_sdl_input()
 		case SDL_SCANCODE_E:
 			cam_dir.y = 1.f;
 			break;
+		default:
+			break;
 		}
 		cam.translate(cam_dir * move_speed);
 	};
@@ -315,6 +319,8 @@ void application::handle_sdl_input()
 		break;
 	case SDL_EVENT_MOUSE_WHEEL:
 		handle_mouse_wheel(evt.wheel);
+		break;
+	default:
 		break;
 	}
 }
